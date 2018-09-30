@@ -1,0 +1,26 @@
+new tailRec in {
+
+  // The public contract only takes one parameter and one return
+  contract @"factorial"(@input, return) = {
+    tailRec!(1, input, *return)
+  }
+  |
+
+  // Tail recursion cuts the number of comm events in half
+  // so the interesting stuff happens here.
+  contract tailRec(@acc, @input, return) = {
+    if (input == 0) {
+      return!(acc)
+    }
+    else {
+      tailRec!(acc * input, input - 1, *return)
+    }
+  }
+
+}
+|
+
+// Unit tests below
+new stdout(`rho:io:stdout`) in {
+  @"factorial"!(3, *stdout)
+}
