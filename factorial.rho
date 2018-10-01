@@ -1,7 +1,7 @@
-new tailRec in {
+new factorial, tailRec in {
 
   // The public contract only takes one parameter and one return
-  contract @"factorial"(@input, return) = {
+  contract factorial(@input, return) = {
     tailRec!(1, input, *return)
   }
   |
@@ -22,5 +22,5 @@ new tailRec in {
 
 // Unit tests below
 new stdout(`rho:io:stdout`) in {
-  @"factorial"!(3, *stdout)
+  factorial!(3, *stdout)
 }
