@@ -14,10 +14,16 @@ new binarySearch, tailRec, stdout(`rho:io:stdout`) in {
 
   contract tailRec(@min, @max, @haystack, @needle, return) = {
 
-    // Can't wait for let mid = (min _ max) / 2
+    // I can't wait until rholang has let mid = (min _ max) / 2
 
+    // Done searching
     if (min == max) {
-      return!(min)
+      if (haystack.nth(min) == needle){
+        return!(min)
+      }
+      else {
+        return!(Nil)
+      }
     }
     else if (needle <= haystack.nth((max + min) / 2)) {
       tailRec!(min, (max + min) / 2, haystack, needle, *return)
@@ -33,7 +39,9 @@ new binarySearch, tailRec, stdout(`rho:io:stdout`) in {
   // Expected output: 5
   binarySearch!([1,3,4,6,7,9,23, 100], 9, *stdout)|
 
-
   // Expected output: 5
   binarySearch!([1,3,4,6,7,9,23], 9, *stdout)|
+
+  // Expected output: Nil
+  binarySearch!([1,3,4,6,7,9,23], 10, *stdout)
 }

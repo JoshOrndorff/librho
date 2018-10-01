@@ -2,7 +2,12 @@ new factorial, tailRec in {
 
   // The public contract only takes one parameter and one return
   contract factorial(@input, return) = {
-    tailRec!(1, input, *return)
+    if (input >= 0) {
+      tailRec!(1, input, *return)
+    }
+    else {
+      return!(Nil)
+    }
   }
   |
 
@@ -16,11 +21,18 @@ new factorial, tailRec in {
       tailRec!(acc * input, input - 1, *return)
     }
   }
+  |
 
-}
-|
+  // Unit tests below
+  new stdout(`rho:io:stdout`) in {
 
-// Unit tests below
-new stdout(`rho:io:stdout`) in {
-  factorial!(3, *stdout)
+    // Expected output: 6
+    factorial!(3, *stdout)|
+
+    // Expected output: 1
+    factorial!(0, *stdout)|
+
+    // Expected output: Nil
+    factorial!(-3, *stdout)
+  }
 }
