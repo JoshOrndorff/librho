@@ -1,5 +1,5 @@
 new abs in {
-  contract abs(@input, return) = {
+  contract abs(@{input /\ Int}, return) = {
     if (input >= 0) {
       return!(input)
     }
@@ -13,6 +13,7 @@ new abs in {
   new stdout(`rho:io:stdout`) in {
     abs!(5, *stdout)|
     abs!(0, *stdout)|
-    abs!(-5, *stdout)
+    abs!(-5, *stdout)|
+    abs!("123", *stdout)
   }
 }
