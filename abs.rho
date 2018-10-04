@@ -1,19 +1,24 @@
 new abs in {
+
+  // The abs contract returns the absolute value of an integer and returns an error message if no integer provided
   contract abs(@input, return, error) = {
-    new inputChecker in {
-      inputChecker!(input) |
-      for(@{input /\ Int} <= inputChecker) {
-        if (input >= 0) {
-          return!(input)
+    match input {
+    
+      // if input is an integer
+      integer /\ Int => {
+        if (integer >= 0) {
+          return!(integer)
         }
         else {
-          return!(-input)
+          return!(-integer)
         }
-      } |
-      for(@{~Int} <= inputChecker) {
-          error!("No integer provided")
       }
-    } 
+      
+      // If not an integer
+      _ => {
+        error!("No integer provided")
+      }
+    }
   } |
 
   // Unit tests below
