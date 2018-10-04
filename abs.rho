@@ -1,4 +1,6 @@
 new abs in {
+
+  // When an int is submitted
   contract abs(@{input /\ Int}, return) = {
     if (input >= 0) {
       return!(input)
@@ -8,9 +10,10 @@ new abs in {
     }
   } |
 
-  contract abs(@{{String} \/ {Bool} \/ {ByteArray} \/ {Uri}}, return) = {
+  // Error message
+  contract abs(@{~Int}, return) = {
     return!("No integer provided")
-  }  |
+  } |
 
   // Unit tests below
   new stdout(`rho:io:stdout`) in {
@@ -18,11 +21,11 @@ new abs in {
     abs!(0, *stdout)|
     abs!(-5, *stdout)|
     abs!("123", *stdout) |
-    abs!(true, *stdout) 
+    abs!(true, *stdout) |
+    abs!(Nil, *stdout) |
+    abs!(@Nil!(Nil), *stdout) 
   }
 }
-
-
 
 
 
