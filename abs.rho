@@ -8,12 +8,8 @@ new abs in {
     }
   } |
 
-  contract abs(@{noInt /\ String}, return) = {
-    return!("provided: String, expected: Integer")
-  }  |
-
-  contract abs(@{noInt /\ Bool}, return) = {
-    return!("provided: Bool, expected: Integer")
+  contract abs(@{{String} \/ {Bool} \/ {ByteArray} \/ {Uri}}, return) = {
+    return!("No integer provided")
   }  |
 
   // Unit tests below
@@ -25,5 +21,8 @@ new abs in {
     abs!(true, *stdout) 
   }
 }
+
+
+
 
 
