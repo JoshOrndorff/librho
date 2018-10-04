@@ -1,31 +1,31 @@
 new abs in {
-
-  // When an int is submitted
-  contract abs(@{input /\ Int}, return) = {
-    if (input >= 0) {
-      return!(input)
-    }
-    else {
-      return!(-input)
-    }
-  } |
-
-  // Error message
-  contract abs(@{~Int}, return) = {
-    return!("No integer provided")
+  contract abs(@input, return, error) = {
+    new inputChecker in {
+      inputChecker!(input) |
+      for(@{input /\ Int} <= inputChecker) {
+        if (input >= 0) {
+          return!(input)
+        }
+        else {
+          return!(-input)
+        }
+      } |
+      for(@{~Int} <= inputChecker) {
+          error!("No integer provided")
+      }
+    } 
   } |
 
   // Unit tests below
-  new stdout(`rho:io:stdout`) in {
-    abs!(5, *stdout)|
-    abs!(0, *stdout)|
-    abs!(-5, *stdout)|
-    abs!("123", *stdout) |
-    abs!(true, *stdout) |
-    abs!(Nil, *stdout) |
-    abs!(@Nil!(Nil), *stdout) 
+  new stdout(`rho:io:stdout`), stderr(`rho:io:stderr`) in {
+    abs!(5, *stdout, *stderr)|
+    abs!(0, *stdout, *stderr)|
+    abs!(-5, *stdout, *stderr)|
+    abs!("123", *stdout, *stderr) |
+    abs!(true, *stdout, *stderr) |
+    abs!(Nil, *stdout, *stderr) |
+    abs!(@Nil!(Nil), *stdout, *stderr) 
   }
 }
-
 
 
