@@ -6,14 +6,24 @@ new abs in {
     else {
       return!(-input)
     }
-  }
-  |
+  } |
+
+  contract abs(@{noInt /\ String}, return) = {
+    return!("provided: String, expected: Integer")
+  }  |
+
+  contract abs(@{noInt /\ Bool}, return) = {
+    return!("provided: Bool, expected: Integer")
+  }  |
 
   // Unit tests below
   new stdout(`rho:io:stdout`) in {
     abs!(5, *stdout)|
     abs!(0, *stdout)|
     abs!(-5, *stdout)|
-    abs!("123", *stdout)
+    abs!("123", *stdout) |
+    abs!(true, *stdout) 
   }
 }
+
+
