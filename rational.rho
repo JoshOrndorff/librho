@@ -1,0 +1,48 @@
+// TODO implement reduced form 6/8 -> 3/4
+
+new rationalFactory, print(`rho:io:stdout`) in {
+  contract rationalFactory(@top, @bot, return) = {
+    new this, topCh, botCh in {
+      topCh!(top)|
+      botCh!(bot)|
+      return!(*this)|
+
+      // For now I'm only supporting other rationals as arguments
+      contract @(*this, "times")(@other, return) = {
+        Nil // TODO implement this
+      }
+      |
+
+      contract @(*this, "toString")(return) = {
+        for (@top <- topCh; @bot <- botCh){
+          topCh!(top)|
+          botCh!(bot)|
+          return!("${top}/${bot}" %% {"top": top, "bot": bot})
+        }
+      }
+    }
+  }
+  |
+
+  // Setup some rationals to run tests on
+  new threeQuarters, onHalf in {
+    rationalFactory!(3, 4, *threeQuarters)|
+    rationalFactory!(1, 2, *oneHalf)
+  }
+  |
+
+  // Unit tests below
+
+  // Expected output: 3/4
+
+  // Expected output:
+  new ack in {
+    for (@threeQuarters <- ack) {
+      @(threeQuarters, "toString")!(*print)
+    }
+  }
+  |
+
+  // Expected
+
+}
