@@ -1,0 +1,29 @@
+// Rholang uses signed 64-bit integers
+// Largest acceptable 9223372036854775807
+// Smallest acceptable -9223372036854775808 // https://rchain.atlassian.net/browse/RHOL-902
+
+new print(`rho:io:stdout`) in {
+  print!(-9223372036854775808)
+}/*
+|
+
+contract @"BigInt"(@value, return) = {
+  new wordsCh, this in {
+    return!(*this)|
+
+    // Start with a one word list
+    wordsCh!([value])|
+
+    //TODO overload this to also accept an Int
+    contract @(*this, "add")(@other, return) = {
+
+    }
+  }
+}
+|
+
+// Overload contract for default value of zero
+contract @"BigInt"(return) = {
+  @BigInt(0, *return)
+}
+*/
