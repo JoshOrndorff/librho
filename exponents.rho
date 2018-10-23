@@ -1,27 +1,17 @@
-new modulo, moduloTailRec, nthPower, nthRoot,
+new modulo, nthPower, nthRoot,
     log2Floor, log10Floor, logFloor, 
     log2Ceiling, log10Ceiling, logCeiling
                                             in {
     
     
     // The public contract that takes a value, its divisor, and returns a remainder result
+    // TODO: handle value and divisor that are too large
+    // TODO: handle negative value and divisor properly
     contract modulo(@value, @divisor, remainderResult) = {
         if (value == 0) { remainderResult!(0) } |
         if (divisor == 0) { remainderResult!(value) } |
-        if (not (value == 0) and not (divisor == 0) ) {
-            moduloTailRec!(value, divisor, *remainderResult)
-        }
-    }
-
-    |
-
-    // Modulo Tail recursion cuts the number of comm events in half
-    // so the interesting stuff happens here.
-    contract moduloTailRec(@remainder, @divisor, return) = {
-        if (remainder >= divisor) {
-            moduloTailRec!(remainder - divisor, divisor, *return)
-        } else {
-            return!(remainder)
+        if (not (value == 0) and not (divisor == 0) ) {            
+            remainderResult!(value - (divisor * (value / divisor)))
         }
     }
     
@@ -193,7 +183,10 @@ new modulo, moduloTailRec, nthPower, nthRoot,
         modulo!(10, 2, *stdout) |
 
         // Expected output: 2
-        modulo!(10, 4, *stdout)
+        modulo!(10, 4, *stdout) |
+
+        // Expected output: 1
+        modulo!(1000000000, 3, *stdout)
     }    
     
     
