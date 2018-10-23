@@ -1,0 +1,201 @@
+new modulo, moduloTailRec, nthPower, nthRoot,
+    log2Floor, log10Floor, logFloor, 
+    log2Ceiling, log10Ceiling, logCeiling
+                                            in {
+    
+    
+    // The public contract that takes a value, its divisor, and returns a remainder result
+    contract modulo(@value, @divisor, remainderResult) = {
+        if (value == 0) { remainderResult!(0) } |
+        if (divisor == 0) { remainderResult!(value) } |
+        if (not (value == 0) and not (divisor == 0) ) {
+            moduloTailRec!(value, divisor, *remainderResult)
+        }
+    }
+
+    |
+
+    // Modulo Tail recursion cuts the number of comm events in half
+    // so the interesting stuff happens here.
+    contract moduloTailRec(@remainder, @divisor, return) = {
+        if (remainder >= divisor) {
+            moduloTailRec!(remainder - divisor, divisor, *return)
+        } else {
+            return!(remainder)
+        }
+    }
+    
+    |
+    
+    contract nthPower(@base, @exponent, powerResult) = {
+        new remainingExponentCh, currentResultCh in {
+            if (exponent < 0) { powerResult!(0) } | // We do not support negative powers
+            if (exponent == 0) { powerResult!(1) } |
+            if (exponent == 1) { powerResult!(base) } |
+            if (exponent > 1) {
+                remainingExponentCh!(exponent)
+                |
+                currentResultCh!(1)
+                |
+                for(@remainingExponent <= remainingExponentCh; @currentResult <= currentResultCh) {
+                    if (remainingExponent > 0) {
+                        currentResultCh!(currentResult * base)
+                        |
+                        remainingExponentCh!(remainingExponent - 1)
+                    } else {
+                        powerResult!(currentResult)
+                    }
+                }
+            }
+        }
+    }
+    
+    |
+    
+    contract nthRoot(@base, @degree, rootResult) = {
+        new precomputedHighCh, highCh, midCh, lowCh in {
+            precomputedHighCh!(1)
+            |
+            for(@high <= precomputedHighCh) {
+                new highNthPowerCh in {
+                    nthPower!(high, degree, *highNthPowerCh)
+                    |
+                    for(@highNthPower <- highNthPowerCh){
+                        if(highNthPower <= base) {
+                            precomputedHighCh!(high * 2)
+                        } else {
+                            highCh!(high)
+                            |
+                            lowCh!(high / 2)
+                            |
+                            midCh!(((high / 2) + high) / 2)
+                        }
+                    }
+                }
+            }
+            |
+            for(@high <= highCh; @mid <= midCh; @low <= lowCh) {
+                if (low < high) {
+                    new midNthPowerCh in {
+                        nthPower!(mid, degree, *midNthPowerCh)
+                        |
+                        for(@midNthPower <- midNthPowerCh) {
+                            if ( low < mid and midNthPower < base ) {
+                                lowCh!(mid) |
+                                midCh!((mid + high) / 2) |
+                                highCh!(high)
+                            } else {
+                                if ( high > mid and midNthPower > base ) {
+                                    lowCh!(low) |
+                                    midCh!((low + mid) / 2) |
+                                    highCh!(mid)
+                                } else {
+                                    rootResult!(mid)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    rootResult!(mid+1)
+                }
+            }
+        }
+    }
+    
+    |
+    
+    contract log2Floor(@value, exponentResult) = {
+        logFloor!(value, 2, *exponentResult)
+    }
+    
+    |
+    
+    contract log10Floor(@value, exponentResult) = {
+        logFloor!(value, 10, *exponentResult)
+    }
+    
+    |
+    
+    contract log2Ceiling(@value, exponentResult) = {
+        logCeiling!(value, 2, *exponentResult)
+    }
+    
+    |
+    
+    contract log10Ceiling(@value, exponentResult) = {
+        logCeiling!(value, 10, *exponentResult)
+    }
+    
+    |
+    
+    contract logFloor(@value, @base, exponentResult) = {
+        new remainderCh, exponentCh in {
+            remainderCh!(value/base)
+            |
+            exponentCh!(0)
+            |
+            for(@remainder <= remainderCh; @exponent <= exponentCh){
+                if ( remainder > 0 ){
+                    exponentCh!(exponent + 1)
+                    |
+                    remainderCh!(remainder / base)
+                } else {
+                    exponentResult!(exponent)
+                }
+            }
+        }
+    }
+    
+    |
+    
+    contract logCeiling(@value, @base, exponentResult) = {
+        new moduloResult, moduloResultCh, remainderCh, exponentCh in {
+            modulo!(value, base, *moduloResultCh)
+            |
+            remainderCh!(value)
+            |
+            exponentCh!(0)
+            |
+            for(@moduloResult <= moduloResultCh; @remainder <= remainderCh; @exponent <= exponentCh) {
+                if (remainder > (base -1)) {
+                    if (exponent > 0 and moduloResult == 0) {
+                        modulo!(remainder, base, *moduloResultCh)
+                    } else {
+                        moduloResultCh!(moduloResult)
+                    }
+                    |
+                    if ((remainder / base) >= 1) {
+                        remainderCh!(remainder/base)
+                        |
+                        exponentCh!(exponent+1)
+                    } else {
+                        remainderCh!(remainder/base)
+                        |
+                        exponentCh!(exponent)
+                    }
+                } else {
+                    if (moduloResult > 0) {
+                        exponentResult!(exponent+1)
+                    } else {
+                        exponentResult!(exponent)
+                    }
+                }
+            }
+        }
+    }
+    
+    |
+    
+    // Unit tests below
+    new stdout(`rho:io:stdout`), stderr(`rho:io:stderr`) in {
+
+        // Expected output: 0
+        modulo!(10, 2, *stdout) |
+
+        // Expected output: 2
+        modulo!(10, 4, *stdout)
+    }    
+    
+    
+    
+}
