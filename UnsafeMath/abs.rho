@@ -1,18 +1,36 @@
 new abs in {
-  contract abs(@input, return) = {
-    if (input >= 0) {
-      return!(input)
+
+  // The abs contract returns the absolute value of an integer and returns an error message if no integer provided
+  contract abs(@input, return, error) = {
+    match input {
+    
+      // if input is an integer
+      integer /\ Int => {
+        if (integer >= 0) {
+          return!(integer)
+        }
+        else {
+          return!(-integer)
+        }
+      }
+      
+      // If not an integer
+      _ => {
+        error!("No integer provided")
+      }
     }
-    else {
-      return!(-input)
-    }
-  }
-  |
+  } |
 
   // Unit tests below
-  new stdout(`rho:io:stdout`) in {
-    abs!(5, *stdout)|
-    abs!(0, *stdout)|
-    abs!(-5, *stdout)
+  new stdout(`rho:io:stdout`), stderr(`rho:io:stderr`) in {
+    abs!(5, *stdout, *stderr)|
+    abs!(0, *stdout, *stderr)|
+    abs!(-5, *stdout, *stderr)|
+    abs!("123", *stdout, *stderr) |
+    abs!(true, *stdout, *stderr) |
+    abs!(Nil, *stdout, *stderr) |
+    abs!(@Nil!(Nil), *stdout, *stderr) 
   }
 }
+
+
