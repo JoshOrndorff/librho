@@ -1,28 +1,28 @@
 new modulo, nthPower, nthRoot,
-    log2Floor, log10Floor, logFloor, 
+    log2Floor, log10Floor, logFloor,
     log2Ceiling, log10Ceiling, logCeiling
                                             in {
-    
-    
+
+
     // The public contract that takes a value, its divisor, and returns a remainder result
     // TODO: handle value and divisor that are too large
     // TODO: handle negative value and divisor properly
     contract modulo(@value, @divisor, remainderResult) = {
         if (value == 0) { remainderResult!(0) } |
+        // TODO: This should be a divisionByZero error.
         if (divisor == 0) { remainderResult!(value) } |
-        if (not (value == 0) and not (divisor == 0) ) {            
+        if (not (value == 0) and not (divisor == 0) ) {
             remainderResult!(value - (divisor * (value / divisor)))
         }
     }
-    
+
     |
-    
+
     contract nthPower(@base, @exponent, powerResult) = {
         new remainingExponentCh, currentResultCh in {
             if (exponent < 0) { powerResult!(0) } | // We do not support negative powers
             if (exponent == 0) { powerResult!(1) } |
-            if (exponent == 1) { powerResult!(base) } |
-            if (exponent > 1) {
+            if (exponent > 0) {
                 remainingExponentCh!(exponent)
                 |
                 currentResultCh!(1)
@@ -39,9 +39,9 @@ new modulo, nthPower, nthRoot,
             }
         }
     }
-    
+
     |
-    
+
     contract nthRoot(@base, @degree, rootResult) = {
         new precomputedHighCh, highCh, midCh, lowCh in {
             precomputedHighCh!(1)
@@ -91,33 +91,33 @@ new modulo, nthPower, nthRoot,
             }
         }
     }
-    
+
     |
-    
+
     contract log2Floor(@value, exponentResult) = {
         logFloor!(value, 2, *exponentResult)
     }
-    
+
     |
-    
+
     contract log10Floor(@value, exponentResult) = {
         logFloor!(value, 10, *exponentResult)
     }
-    
+
     |
-    
+
     contract log2Ceiling(@value, exponentResult) = {
         logCeiling!(value, 2, *exponentResult)
     }
-    
+
     |
-    
+
     contract log10Ceiling(@value, exponentResult) = {
         logCeiling!(value, 10, *exponentResult)
     }
-    
+
     |
-    
+
     contract logFloor(@value, @base, exponentResult) = {
         new remainderCh, exponentCh in {
             remainderCh!(value/base)
@@ -135,9 +135,9 @@ new modulo, nthPower, nthRoot,
             }
         }
     }
-    
+
     |
-    
+
     contract logCeiling(@value, @base, exponentResult) = {
         new moduloResult, moduloResultCh, remainderCh, exponentCh in {
             modulo!(value, base, *moduloResultCh)
@@ -173,12 +173,13 @@ new modulo, nthPower, nthRoot,
             }
         }
     }
-    
+
     |
-    
+
     // Unit tests below
     new stdout(`rho:io:stdout`), stderr(`rho:io:stderr`) in {
-
+/*
+        // Modulo
         // Expected output: 0
         modulo!(10, 2, *stdout) |
 
@@ -186,9 +187,20 @@ new modulo, nthPower, nthRoot,
         modulo!(10, 4, *stdout) |
 
         // Expected output: 1
-        modulo!(1000000000, 3, *stdout)
-    }    
-    
-    
-    
+        modulo!(1000000000, 3, *stdout) |
+*/
+
+        // nth Power
+        // Expected ouput: 1
+        nthPower!(10, 0, *stdout) |
+
+        // Expected ouput: 10
+        nthPower!(10, 1, *stdout) |
+
+        // Expected ouput: 100
+        nthPower!(10, 2, *stdout)
+    }
+
+
+
 }
