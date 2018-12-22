@@ -1,0 +1,95 @@
+new mergeSort in {
+    contract mergeSort(@list, return) = {
+        if (list.length() <= 1){
+            return!(list)
+        }
+        else if (list.length() == 2) {
+            if (list.nth(0) > list.nth(1)) {
+                return!([list.nth(1), list.nth(0)])
+            } else {
+                return!(list)
+            }
+        }
+        else {
+            new l1, l2 in {
+                mergeSort!(list.slice(0, list.length() / 2), *l1) |
+                mergeSort!(list.slice(list.length() / 2, list.length()), *l2) |
+                for (@sortedL1 <- l1; @sortedL2 <- l2) {
+                    new pc1, pc2, pc, lCh in {
+                        pc1!(0) | pc2!(0) | pc!(0) | lCh!([]) |
+                        for (@p1 <= pc1; @p2 <= pc2; @p <= pc; @l <= lCh ) {
+                            if (p == sortedL1.length() + sortedL2.length()) {
+                                // return merged list
+                                return!(l)
+                            }
+                            else if (p1 < sortedL1.length() and p2 < sortedL2.length()) {
+                                if (sortedL1.nth(p1) < sortedL2.nth(p2)) {
+                                    lCh!(l ++ [sortedL1.nth(p1)]) |
+                                    pc1!(p1+1) | pc2!(p2)
+                                } else {
+                                    lCh!(l ++ [sortedL2.nth(p2)]) |
+                                    pc1!(p1) | pc2!(p2+1)
+                                }
+                            } else if (p1 < sortedL1.length()) {
+                                lCh!(l ++ [sortedL1.nth(p1)]) |
+                                pc1!(p1+1) | pc2!(p2)
+                            }
+                            else {
+                                lCh!(l ++ [sortedL2.nth(p2)]) |
+                                pc1!(p1) | pc2!(p2+1)
+                            }
+                            |
+                            pc!(p+1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    |
+    //Tests
+    new assert, stdout(`rho:io:stdout`) in {
+        new return in {
+            mergeSort!([6, 5, 4, 3, 2, 1], *return) | for (@sortedList <- return) {
+                assert!(sortedList, [1, 2, 3, 4, 5, 6], "Reversed long list")
+            }
+        }
+        |
+        new return in {
+            mergeSort!([1, 2, 3, 4, 5, 6], *return) | for (@sortedList <- return) {
+                assert!(sortedList, [1, 2, 3, 4, 5, 6], "Sorted long list")
+            }
+        }
+        |
+        new return in {
+            mergeSort!([], *return) | for (@sortedList <- return) {
+                assert!(sortedList, [], "Empty list")
+            }
+        }
+        |
+        new return in {
+            mergeSort!([1], *return) | for (@sortedList <- return) {
+                assert!(sortedList, [1], "One item")
+            }
+        }
+        |
+        new return in {
+            mergeSort!([2, 1], *return) | for (@sortedList <- return) {
+                assert!(sortedList, [1, 2], "Two items")
+            }
+        }
+        |
+        new return in {
+            mergeSort!([3, 1, 2], *return) | for (@sortedList <- return) {
+                assert!(sortedList, [1, 2, 3], "Odd number of items")
+            }
+        }
+        |
+        contract assert(@o1, @o2, @msg) = {
+            match o1 == o2 {
+                true => {stdout!("SUCCESS: " ++ msg)}
+                false => {stdout!("FAIL: " ++ msg)}
+            }
+        }
+    }
+}
