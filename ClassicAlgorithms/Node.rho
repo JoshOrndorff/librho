@@ -72,9 +72,12 @@ new Object, stdout(`rho:io:stdout`) in {
           match(nameList)
           { [last] => {
             //stdout!(["match last",last, "in", nod]) |
-            if (last == "_self") { // "self" is a virtual ref to the node itself
-              return!(nod.get("props").get("object"))
-            } else {
+            match (last) {
+            "_self" => return!(nod.get("props").get("object"))
+            "_class" => return!(nod.get("contract"))
+            "_links" => return!(nod.get("links"))
+            "_props" => return!(nod.get("props"))
+            _ => {
                 if ( nod.get("props").get(last) == Nil ) {
                 // TODO ask super?
                   stdout!(["last",last,"not found in",nod]) |
@@ -82,8 +85,8 @@ new Object, stdout(`rho:io:stdout`) in {
                 } else {
                     return!(nod.get("props").get(last))
                 }
+              }
             }
-
           }
           [head,...tail] => {
              //stdout!(["match head",head, nod.get("links").get(head),tail, nod]) |
@@ -174,5 +177,4 @@ true
 "a 3rd node"
 ["node", `rho:id:ijbedyaz4imin7j6mczyo8gp3r66w56ediadi4initu8d3yu1bk6i3`]
 "contracts"
-![resulting graph](https://cdn.discordapp.com/attachments/481106525734305792/521442480659628044/Node.png)
 */
