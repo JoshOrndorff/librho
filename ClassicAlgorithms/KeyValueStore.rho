@@ -1,0 +1,77 @@
+new makeKVStore, stdout(`rho:io:stdout`) in {
+
+  // User call to make a new key-value store
+  contract makeKVStore(return) = {
+
+    new storeCh, this in {
+
+      // Give back reference to the created KVstore
+      return!(*this) |
+
+      // Initialize with empty store
+      storeCh!(Nil) |
+
+      // Put new record
+      // contract @(*this, "put")(@key, @value) // alternative syntax. Homework: characterize the performance, phlo cost
+      contract this(@"put", key, @value) = {
+        for (@oldStore <- storeCh) {
+          stdout!("putting a value in") |
+          // TODO err if already there
+          storeCh!(oldStore | key!(value))
+        }
+      } |
+
+      // Get existing records out
+      contract this(@"get", @key, return) = {
+        // Equal mean use the same key as above
+        stdout!("In the get method") |
+
+        for(@{ @=key!(value) | rest } <- storeCh) { // Would be better to use peek here Thank Jeremy :)
+          storeCh!(@key!(value) | rest) |
+          return!(value) // Actually send back the looked up result :)
+        }
+      }
+      |
+      contract this(@"lookup", @value, return) = {
+        // Equal mean use the same key as above
+        stdout!("In the lookup method") |
+
+        for(@{ @key!(=value) | rest } <- storeCh) { // Would be better to use peek here Thank Jeremy :)
+          storeCh!(@key!(value) | rest) |
+          return!(key) // Actually send back the looked up result :)
+        }
+      }
+
+      // Update an existing record
+      //TODO if we have time
+    }
+  } |
+
+  // States and capitals use case
+  new ack, ack1 in {
+    stdout!("In main program") |
+    makeKVStore!(*ack) |
+
+    for (statesAndCapitals <- ack) {
+      stdout!("received states and capitals store") |
+      statesAndCapitals!("put", "Ohio", "Columbus") |
+      statesAndCapitals!("put", "Florida", "Tallahassee") |
+      statesAndCapitals!("put", "California", "Sacramento") |
+      statesAndCapitals!("put", "Georgia", "Atlanta") |
+
+      statesAndCapitals!("get", "Florida", *ack) |
+      for (@capital <- ack) {
+        stdout!("The capital was " ++ capital)
+      }
+      |
+      statesAndCapitals!("lookup", "Tallahassee", *ack1) |
+      for (@state <- ack1) {
+        stdout!("The state was " ++ state)
+      }
+
+    }
+  }
+}
+
+// KV Store should look like this
+// @"Ohio"!("Columbus") | @"California"!("Sacramento") | @"Florida"!("Tallahassee")
