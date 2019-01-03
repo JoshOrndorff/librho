@@ -1,0 +1,180 @@
+// Rholang abstract directed graph Node Object exposing properties and links, having an object wrapper, super, and public key
+// Nodes can be used for hierarchical directories with loops suitable for use with graphql providing for user name spaces.
+// simple Object capability wrapper proxy prevents direct access to object model channels without duplicating contracts for each instance.
+new Object, stdout(`rho:io:stdout`) in {
+  contract Object(class, @instance, ret) = {
+    new this in {
+      ret!(bundle+{*this}) |
+      //instance methods
+      contract this(@method, args) = {
+        class!(instance, method, *args)
+      }
+    }
+  } |
+  // node data is a map of maps
+    // TODO encryption, inheritance, typing
+  new Node, ret1, ret2, ret3, ack4, ack5, stdout(`rho:io:stdout`) in {
+    contract Node(@"new", @[ // class method to create a new node
+           super, // node to query for links not found in current nde
+           propsMap, // property map of node attributes
+           linkMap, // map of named links from node
+           owner, // public key of owner TODO identity and encryption TBD
+         *return]) = { // return the address (name/channel) of the new node Object
+      new instance, ret in {
+        stdout!(["new",{"super": super, "props": propsMap, "links": linkMap, "owner": owner }, *instance]) |
+        Object!(*Node, *instance, *ret) |
+        for ( @object <- ret ) {
+          instance!({"object": object, "contract": bundle+{*Node}, "super": super, "props": propsMap, "links": linkMap, "owner": owner }) |
+          return!(object)
+        }
+      }
+    } |
+    // add a named link to this node
+    contract Node(this, @"linkAs", @[name, node2, *ack]) = {
+      //stdout!(["in linkAs", *this]) |
+      for (@nod <- this) {
+        this!(nod.set("links",nod.get("links").set(name, node2))) |
+        //stdout!(["linked it",nod.set("links",nod.get("links").set(name, node2))]) |
+        ack!(Nil)
+      }
+    }|
+    // remove a named link from this node
+    contract Node(this, @"unLink", @[name, *ack]) = {
+      //stdout!("in unLink") |
+      for (@nod <- this) {
+        //stdout!("got this") |
+        this!(nod.set("links",nod.get("links").delete(name))) |
+        // TODO fix race
+        ack!(Nil)
+      }
+    }|
+    // get a property value from this node
+    contract Node(this, @"get", @[name, *value]) = {
+      for (@nod <- this) {
+        this!(nod) |
+        value!(nod.get("props").get(name))
+      }
+    }
+    // set a property value of this node
+  | contract Node(this, @"set", @[name, value, *ack]) = {
+      for (@nod <- this) {
+        //stdout!("got this") |
+        this!(nod.set("props",nod.get("props").set(name,value))) |
+        ack!(Nil)
+      }
+    }
+    // query down a sequence of linked nodes from this node
+  | contract Node(this, @"query", @[nameList, *return]) = {
+      //stdout!(["in query", nameList, *this]) |
+      for (@nod <- this) {
+          stdout!("query node", nod) |
+          this!(nod) |
+          match(nameList)
+          { [last] => {
+            //stdout!(["match last",last, "in", nod]) |
+            match (last) {
+            "_self" => return!(nod.get("props").get("object"))
+            "_class" => return!(nod.get("contract"))
+            "_links" => return!(nod.get("links"))
+            "_props" => return!(nod.get("props"))
+            _ => {
+                if ( nod.get("props").get(last) == Nil ) {
+                // TODO ask super?
+                  stdout!(["last",last,"not found in",nod]) |
+                return!(Nil)
+                } else {
+                    return!(nod.get("props").get(last))
+                }
+              }
+            }
+          }
+          [head,...tail] => {
+             //stdout!(["match head",head, nod.get("links").get(head),tail, nod]) |
+             if ( nod.get("links").get(head) != Nil ) {
+               // head is the name of a node in the links map
+              //stdout!("calling Node",nod.get("links").get(head), "query", tail, *return) |
+              // query the remaining link names from the found link name
+              //@{nod.get("contract")}!(nod.get("links").get(head), "query", [tail, *return])
+              @{nod.get("links").get(head)}!("query", [tail, *return])
+            } else {
+              stdout!(["head",head,"is not the name of a node in the link map of",nod]) |
+              // ask super?
+              if (nod.get("super") != Nil ) {
+                @{nod.get("contract")}!(nod.get("super"),"query",nameList,*return)
+              } else {
+                return!(Nil)
+              }
+            }
+          }
+          _ => {
+            stdout!("no match") |
+            return!(Nil)
+        }
+        }
+      }
+    }
+    // get the uri of the Node contract from the registry
+  | contract Node(@"register", @[*ret]) = {
+      new nodeChan, uriChan, insertArbitrary(`rho:registry:insertArbitrary`) in  {
+      insertArbitrary!(bundle+{*Node}, *nodeChan) |
+      for(@uri <- nodeChan) {
+        stdout!(["contract", uri]) |
+        ret!(uri)
+      }
+     }
+    }
+    // get the uri of this node from the registry
+  | contract Node(this, @"register", @[*ret]) = {
+      new nodeChan, uriChan, insertArbitrary(`rho:registry:insertArbitrary`) in {
+        for( @node <- this) {
+          if (node.get("uri") != Nil ) {
+            ret!(node.get("uri")) |
+          this!(node)
+          } else {
+            insertArbitrary!(*this, *uriChan) |
+            for(@uri <- uriChan) {
+             stdout!(["node",uri]) |
+           this!(node.set("uri",uri)) |
+             //ret!(uri.curve25519.encrypt(0,nod.get("owner"))
+             ret!(uri)
+            }
+        }
+        }
+      }
+    }
+  | stdout!(["Node: ",*Node])
+  | Node!("new",[Nil,{"name": "root", "data": true},{},Nil,*ret1])
+  | Node!("new",[Nil,{"name": "contracts"},{},Nil,*ret2])
+  | for ( nod1 <- ret1; nod2 <- ret2 ) { Nil
+    | nod1!("get", ["name", *stdout]) // root
+//    | nod1!("get", ["data", *stdout]) // true
+    | nod1!("set", [["purpose"], "for all my stuff", *stdout]) // Nil
+    | nod1!("query", [["data"], *stdout]) // true
+    | nod1!("linkAs",["next", *nod2, *ack4])
+    | Node!("new",[Nil,{"name": "a 3rd node"},{"loop": *nod1},Nil,*ret3])
+    | for ( nod3 <- ret3 ) {nod2!("linkAs",["end", *nod3, *ack5])}
+    | nod2!("linkAs",["Node", *Node, *stdout]) // Nil
+    | for ( _ <- ack4; _ <- ack5 ) {
+      stdout!("got the nodes done")
+      | nod2!("query", [["end", "name"], *stdout]) // "a 3rd node"
+      | nod1!("query", [["next", "end", "loop", "next", "name"], *stdout]) // "contracts"
+      | nod1!( "register", [*stdout])
+      }
+    }
+  }
+}
+/* output
+["Node: ", Unforgeable(0x1de867561a57782ed6844f9c749af5a489458536b9479d0aa4c5828aa3e039c5)]
+["new", {"links" : {}, "owner" : Nil, "props" : {"name" : "contracts"}, "super" : Nil}, Unforgeable(0xfc93eba5a84af39009aff0c9ffae4b4dafa59761342ee115ca409413ed48d7d9)]
+["new", {"links" : {}, "owner" : Nil, "props" : {"data" : true, "name" : "root"}, "super" : Nil}, Unforgeable(0x7bfa88d93fb114aba046ed056ae301c2763028bdb1224412b41e7a292d193dbf)]
+"root"
+Nil
+["new", {"links" : {"loop" : bundle+ {   Unforgeable(0x16e53ccbe28986ea27b5112c34a87ff1190298a180d7a2c9a4964857b79afd5e) }}, "owner" : Nil, "props" : {"name" : "a 3rd node"}, "super" : Nil}, Unforgeable(0x3867dc101a44f1dda80ea62ff9f4571eada922bb1ae1fd9b5a2843efea61f581)]
+Nil
+"got the nodes done"
+true
+`rho:id:ijbedyaz4imin7j6mczyo8gp3r66w56ediadi4initu8d3yu1bk6i3`
+"a 3rd node"
+["node", `rho:id:ijbedyaz4imin7j6mczyo8gp3r66w56ediadi4initu8d3yu1bk6i3`]
+"contracts"
+*/
