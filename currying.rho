@@ -1,0 +1,122 @@
+new multiplyTupled,
+    multiplyCurried,
+    curry2,
+    uncurry2,
+    stdout(`rho:io:stdout`) in {
+
+  /**
+   * Tupled Version. Multiply two integers.
+   * @param x First factor
+   * @param y Second factor
+   * @return The product of x and y
+   */
+  for (@x, @y, return <= multiplyTupled) {
+    return!(x * y)
+  } |
+
+  /**
+   * Curried Version
+   */
+  for (@x, intermediateCh <= multiplyCurried) {
+    new partiallyApplied in {
+      // intermediateCh!(await (@y, return)) {
+      intermediateCh!(*partiallyApplied) |
+      for (@y, return <- partiallyApplied) {
+        return!(x * y)
+      }
+    }
+  } |
+
+  // Test the tupled version
+  new ansCh in {
+    // multiplyTupled!(3, 4, await @ans) {
+    multiplyTupled!(3, 4, *ansCh) |
+    for(@ans <- ansCh) {
+      stdout!(["Testing MultiplyTupled. expected: 12, got:", ans])
+    }
+  } |
+
+  // Test the Curried version
+  new ansCh, partialCh in {
+    // multiplyCurried!(3, await partial) {
+    multiplyCurried!(3, *partialCh) |
+    for (partial <- partialCh) {
+      // partial!(4, await @ans) {
+      partial!(4, *ansCh) |
+      for (@ans <- ansCh) {
+        stdout!(["Testing MultiplyCurried. expected: 12, got:", ans])
+      }
+    }
+  } |
+
+  /*
+  Now let's write some scaffolding that takes the tupled
+  version and converts it into a curried version. This works specifically for "functions" that take (arg, arg, return).
+  */
+  for (tupled, curriedCh, <- curry2) {
+    new curried in {
+      // curriedCh!(await (@arg1, partialCh)) {
+      curriedCh!(*curried) |
+      for(@arg1, partialCh <- curried) {
+        new partial in {
+          //partialCh!(await (@arg2, return)) {
+          partialCh!(*partial) |
+          for (@arg2, return <- partial) {
+            tupled!(arg1, arg2, *return)
+          }
+        }
+      }
+    }
+  } |
+
+  // Test the Currying process
+  new curriedCh, partialCh, ansCh in {
+
+    // curry2!(multipluTupled, await curriedCh) {
+    curry2!(*multiplyTupled, *curriedCh) |
+    for (curried <- curriedCh) {
+      // for curried(5, await partial) {
+      curried!(5, *partialCh) |
+      for (partial <- partialCh) {
+        // partial!(6, await @ans) {
+        partial!(6, *ansCh) |
+        for (@ans <- ansCh) {
+          stdout!(["Testing curry2. expected: 30, got:", ans])
+        }
+      }
+    }
+  } |
+
+  /*
+  And finally, let's do the opposite. Transform a curried
+  "function" into a tupled one.
+  */
+  for (curried, tupledCh <- uncurry2) {
+    new tupled in {
+      // tupledCh!(await (@arg1, @arg2, return)) {
+      tupledCh!(*tupled) |
+      for (@arg1, @arg2, return <- tupled) {
+        new partialCh in {
+          //curried!(arg1, await partial) {
+          curried!(arg1, *partialCh) |
+          for (partial <- partialCh) {
+            partial!(arg2, *return)
+          }
+        }
+      }
+    }
+  } |
+
+  // Test the uncurrying process
+  new tupledCh, ansCh in {
+    // uncurry2!(*multiplyCurried, await tupled) {
+    uncurry2!(*multiplyCurried, *tupledCh) |
+    for (tupled <- tupledCh) {
+      //tupled!(2, 9, await @ans) {
+      tupled!(2, 9, *ansCh) |
+      for (@ans <- ansCh) {
+        stdout!(["Testing uncurry2. expected: 18, got:", ans])
+      }
+    }
+  }
+}
