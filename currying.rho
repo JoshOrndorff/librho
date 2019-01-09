@@ -2,6 +2,7 @@ new multiplyTupled,
     multiplyCurried,
     curry2,
     uncurry2,
+    swapCurry,
     stdout(`rho:io:stdout`) in {
 
   /**
@@ -11,6 +12,7 @@ new multiplyTupled,
    * @return The product of x and y
    */
   for (@x, @y, return <= multiplyTupled) {
+    stdout!([x, "times", y, "is", x*y]) |
     return!(x * y)
   } |
 
@@ -22,6 +24,7 @@ new multiplyTupled,
       // intermediateCh!(await (@y, return)) {
       intermediateCh!(*partiallyApplied) |
       for (@y, return <- partiallyApplied) {
+        stdout!([x, "times", y, "is", x*y]) |
         return!(x * y)
       }
     }
@@ -88,10 +91,11 @@ new multiplyTupled,
   } |
 
   /*
-  And finally, let's do the opposite. Transform a curried
-  "function" into a tupled one.
+  And now, let's do the opposite. Transform a curried
+  "function" into a tupled one. Again, only works for
+  2-args.
   */
-  for (curried, tupledCh <- uncurry2) {
+  for (curried, tupledCh <= uncurry2) {
     new tupled in {
       // tupledCh!(await (@arg1, @arg2, return)) {
       tupledCh!(*tupled) |
@@ -116,6 +120,51 @@ new multiplyTupled,
       tupled!(2, 9, *ansCh) |
       for (@ans <- ansCh) {
         stdout!(["Testing uncurry2. expected: 18, got:", ans])
+      }
+    }
+  } |
+
+  /*
+  And finally, let's write one that swaps the order of the curried
+  args. Hmmm I guess a commutative function wasn't the best possibl
+  example. I'll add a debugging line for now.
+  */
+  for (orig, swappedCh <= swapCurry) {
+    new swapped in {
+      // swappedCh!(await (@arg1, partialCh)) {
+      swappedCh!(*swapped) |
+      for (@arg1, partialCh <- swapped) {
+        new partial in {
+          // partialCh!(await (@arg2, return))
+          partialCh!(*partial) |
+          for (@arg2, return <- partial) {
+            // Now I have both args, so I can call the riginal curried version
+            new partialCh in {
+              // orig!(arg2, await partial) {
+              orig!(arg2, *partialCh) |
+              for (partial <- partialCh) {
+                partial!(arg1, *return)
+              }
+            }
+          }
+        }
+      }
+    }
+  } |
+
+  // And test to curry swapping TODO!
+  new swappedCh, partialCh, ansCh in {
+    // swapCurry!(*multiplyCurried, await swapped) {}
+    swapCurry!(*multiplyCurried, *swappedCh) |
+    for (swapped <- swappedCh) {
+      // swapped!(4, await partial) {
+      swapped!(7, *partialCh) |
+      for (partial <- partialCh) {
+        // partial!(3, await @ans) {
+        partial!(3, *ansCh) |
+        for (@ans <- ansCh) {
+          stdout!(["Testing swapCurry. expected: 21, got:", ans])
+        }
       }
     }
   }
