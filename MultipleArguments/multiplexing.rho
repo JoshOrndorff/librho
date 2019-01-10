@@ -1,0 +1,91 @@
+new concatTupled,
+    concatParalleled,
+    mux2,
+    demux2,
+    stdout(`rho:io:stdout`) in {
+
+  contract concatTupled (@a, @b, return) = {
+    return!(a ++ b)
+  } |
+
+  contract concatParalleled (aCh, bCh, return) = {
+    for (@a <- aCh; @b <- bCh) {
+      return!(a ++ b)
+    }
+  } |
+
+
+  // Test the tupled version
+  new ansCh in {
+    concatTupled!("hello ", "world", *ansCh) |
+    for (@ans <- ansCh) {
+      stdout!(["Testing concatTupled. ", ans])
+    }
+  } |
+
+
+  // Test the Paralleled version
+  new aCh, bCh, ansCh in {
+    concatParalleled!(*aCh, *bCh, *ansCh) |
+    aCh!("hello ") |
+    bCh!("world") |
+    for(@ans <- ansCh) {
+      stdout!(["Testing concatParalleled. ", ans])
+    }
+  } |
+
+
+  /*
+  This multiplexer converts a tupled contract
+  to a paralleled interface.
+  */
+  contract mux2 (tupled, paralleledCh) = {
+    new paralleled in {
+      paralleledCh!(*paralleled) |
+      for (aCh, bCh, return <- paralleled) {
+        for (@a <- aCh; @b <- bCh) {
+          tupled!(a, b, *return)
+        }
+      }
+    }
+  } |
+
+  /*
+  This demultiplexer is the opposite of the multiplexer.
+  It converts a paralleled contract to tupled.
+  */
+  contract demux2 (paralleled, tupledCh) = {
+    new aCh, bCh, tupled in {
+      tupledCh!(*tupled) |
+      for (@a, @b, return <- tupled) {
+        aCh!(a) |
+        bCh!(b) |
+        paralleled!(*aCh, *bCh, *return)
+      }
+    }
+  } |
+
+  // Test the muxer
+  new ansCh, aCh, bCh, paralleledCh in {
+    mux2!(*concatTupled, *paralleledCh) |
+    for (paralleled <- paralleledCh) {
+      paralleled!(*aCh, *bCh, *ansCh) |
+      aCh!("hello ") |
+      bCh!("world") |
+      for (@ans <- ansCh) {
+        stdout!(["Testing muxer. ", ans])
+      }
+    }
+  } |
+
+  // Test the demuxer
+  new tupledCh, ansCh in {
+    demux2!(*concatParalleled, *tupledCh) |
+    for (tupled <- tupledCh) {
+      tupled!("hello ", "world", *ansCh) |
+      for (@ans <- ansCh) {
+        stdout!(["Testing demuxer. ", ans])
+      }
+    }
+  }
+}

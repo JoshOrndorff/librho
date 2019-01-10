@@ -22,5 +22,11 @@ Search, Sort, Pathfinding, etc
 ## Blockchain Patterns
 Best practices for common blockchain operations. Again, any code here is in its infancy and is not formally verified. Use at your own risk.
 
+## Multiple Arguments
+Comparing and converiting three patterns for calling contracts with multiple arguments.
+1. Tupling
+2. Currying (not recommended here)
+3. Multiplexing
+
 ## License
 Apache 2.0
