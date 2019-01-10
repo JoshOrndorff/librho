@@ -1,0 +1,14 @@
+new divmod in {
+  contract divmod (@dividend, @divisor, quotientCh, remainderCh) = {
+    quotientCh!(dividend / divisor) |
+    remainderCh!(dividend - (dividend / divisor) * divisor)
+  } |
+
+  // Tests
+  new stdout(`rho:io:stdout`), qCh, rCh in {
+    divmod!(10, 3, *qCh, *rCh) |
+    for (@q <- qCh; @r <- rCh) {
+      stdout!("10 / 3 = ${q}r${r}" %% {"q": q, "r": r})
+    }
+  }
+}
