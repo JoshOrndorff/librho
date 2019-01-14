@@ -1,0 +1,82 @@
+new instance,
+    compound2,
+    uncompound2 in {
+
+  // The "instance" has two methods
+  // Method 1 is dispatched via a compound name
+  contract @(*instance, "method1") (@arg, return) = {
+    return!("called method 1 with: " ++ arg)
+  } |
+
+  // Method 2 is dispatched via the first argument
+  contract instance (@"method2", @arg, return) = {
+    return!("called method 2 with: " ++ arg)
+  } |
+
+  /**
+   * When you have a contract that is called with the method
+   * as the first argument, and prefer to call on a compound
+   * name use this contract to convert paradigms.
+   *
+   * This contract is called a single time (as opposed to once
+   * per use) and gives only an ack in response. As a side-effect,
+   * there is now a forwarding contract listening on a compound name
+   *
+   * This example works for contracts that take exactly two arguments
+   * but generalizations are straightforward.
+   */
+  contract compound2 (inst, @method, ack) = {
+
+    ack!(Nil) |
+
+    contract @(*inst, method) (@a, @b) = {
+      inst!(method, a, b)
+    }
+
+  } |
+
+  /**
+   * When you have a contract that is called on a compound name,
+   * and prefer to call with the method as the first argument,
+   * use this contract to convert paradigms.
+   *
+   * This contract is called a single time (as opposed to once
+   * per use) and gives only an ack in response. As a side-effect,
+   * there is now a forwarding contract listening on a compound name
+   *
+   * This example works for contracts that take exactly two arguments
+   * but generalizations are straightforward.
+   */
+
+   // Rholang Design Problem: bundles intertwine two concepts
+   // that should really be separate.
+   // 1. Preventing destructuring via pattern matching
+   // 2. Enforcing read- and write-only channels
+  contract uncompound2 (@(inst, method), ack) = {
+    ack!(Nil) |
+
+    //BUG I can't get this pattern match to work.
+    // replacing it with the commented version immediately
+    // below works as expected.
+    contract @inst (@=method, @a, @b) = {
+    //contract @inst (@"method1", @a, @b) = {
+      @(inst, method)!(a, b)
+    }
+  } |
+
+  // Demo
+  new stdout(`rho:io:stdout`) in {
+
+    // Call both methods with both paradigms
+    // Expect only the correctly dispatched calls are executed
+    @(*instance, "method1")!("compound call", *stdout) |
+    @(*instance, "method2")!("compound call", *stdout) |
+    instance!("method1", "first arg", *stdout) |
+    instance!("method2", "first arg", *stdout) |
+
+    // Now convert each method so it is dispatched in both ways
+    // Expect the two remaining calls to properly execute
+    compound2!(*instance, "method2", Nil) |
+    uncompound2!((*instance, "method2"), Nil)
+  }
+}
