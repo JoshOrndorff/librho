@@ -1,0 +1,68 @@
+new loggerFactory in {
+
+  /**
+   * A logging forwarder is for delegating a capability to someone
+   * in a way that its use will be automatically logged. It may be
+   * useful in a situation where you are not yet sure that the delegee
+   * is trustworthy, or simply when careful automated bookkeeping
+   * is desirable.
+   */
+  contract loggerFactory(capability, logCh, forwardCh) = {
+
+    new log,
+      forward
+      in {
+
+      logCh!(*log) |
+      forwardCh!(*forward) |
+
+      /**
+       * Messages to be forwarded are sent here, to be rebroadcast
+       * to both the capability as well as the log.
+       * Design Decision: Is there value having an ack here?
+       */
+      contract forward(@message, ack) = {
+        ack!(Nil) |
+        log!(message) |
+        capability!(message)
+      }
+    }
+  } |
+
+  // Demo using the forwarder
+  new superpower,
+    forwardCh,
+    logCh,
+    ack1,
+    ack2,
+    ack3,
+    stdout(`rho:io:stdout`),
+    stdoutAck(`rho:io:stdoutAck`)
+    in {
+
+    // Silly superpower that we'll wrap with a forwarder
+    // Explicit tupling is not ideal. But I don't see a better option.
+    contract superpower(@(payload /\ String, return)) = {
+      @return!("Superpower Invoked with " ++ payload)
+    } |
+
+    loggerFactory!(*superpower, *logCh, *forwardCh) |
+    for (log <- logCh; forward <- forwardCh) {
+
+      // Send two messages to the forwarder
+      forward!(("Apples" , *stdout), *ack1) |
+      forward!(("Bananas", *stdout), *ack2) |
+
+      for (_ <- ack1; _ <- ack2) {
+        
+        // Check the log
+        stdoutAck!("\n\nHere are the log contents", *ack3) |
+        for (_ <- ack3) {
+          for (@logmsg <= log) {
+            stdout!(["logged: ", logmsg])
+          }
+        }
+      }
+    }
+  }
+}
