@@ -1,0 +1,81 @@
+// ISSUE: this clock will overflow due to int64 limitation
+new powClockFactory,
+    export(`plugboard:export`) in {
+
+  export!(*powClockFactory) |
+
+  /**
+   * Creates a new proof of work clock. Many such clocks can be created, so
+   * there is no need to form global social consensus on a particular clock.
+   * A POW clock is a new notion of time that is not related to wall clock
+   * time accept that it is monatonic increasing.
+   *
+   * Each comes with two user-facing methods, tick, and getTime which are
+   * described in detail below. The clock itself provides no security on
+   * those methods. If security on either method is desired, the
+   * methods should be composed with standard ocap patterns.
+   */
+  contract powClockFactory (@initDifficulty, return) = {
+    new difficultyCh,
+        nowCh,
+        getTime,
+        tick
+        in {
+
+      // Send the callable methods back to the creator
+      return!((*getTime, *tick)) |
+
+      // Initialize the difficulty and current time
+      difficultyCh!(initDifficulty) |
+      nowCh!(0) |
+
+      /**
+       * The get time methd replies with the current time measured
+       * in clock ticks. Frequently this channel will be made as public
+       * as possible so anyone can check the time. Although it could
+       * also be composed with a tollBoothForwarder to create a paid
+       * time service.
+       */
+      contract getTime(return) = {
+        //for (@now <! nowCh) {
+        for (@now <- nowCh) {
+          nowCh!(now) |
+          return!(now)
+        }
+      } |
+
+      /**
+       * To advance the clock anyone with access to the tick method
+       * must send a witness that can be concatenated with the current
+       * time and hashed to a value below the current difficulty
+       */
+      contract tick(@witness) = {
+        for (@oldTime <- nowCh; @difficulty <- difficultyCh) {
+          difficultyCh!(difficulty)  |
+
+          new hashCh in {
+            // @keccak256hash!((witness, oldTime), await hash) {
+            @"keccak256hash"!((witness, oldTime), *hashCh) |
+            for (@hash <- hashCh) {
+              if (hash < difficulty) {
+                nowCh!(oldTime + 1)
+              }
+              else {
+                nowCh!(oldTime)
+              }
+            }
+          }
+        }
+      }
+
+      /*
+        Idea: In this simple version, the difficulty is a constant.
+        We could have a feedback mechanism to calibrate the difficulty.
+        Perhaps for every tick, a miner could submit a "faster" or "slower"
+        vote. Or maybe there would be s seperate method to submit feedback
+        that was competing for proof of work. Interesting game theory for
+        another day.
+      */
+    }
+  }
+}
