@@ -1,0 +1,45 @@
+new revokFactory in {
+
+  /**
+   * A revokable forwarder is for delegating a capability to someone
+   * in a non-permanent way. It may be useful for temporary duties
+   * or in a situation where you are not yet sure that the delegee
+   * is trustworthy.
+   */
+  contract revokFactory(capability, killSwitchCh, forwarderCh) = {
+
+    new activeCh,
+      killSwitch,
+      forward in {
+
+      // Active when a message is on the active channel
+      activeCh!(Nil) |
+      forwarderCh!(*forward) |
+      killSwitchCh!(*killSwitch) |
+
+      /**
+       * Anyone with the kill switch can revoke the forwarding
+       * priviledges by sending any message on the killSwitch.
+       */
+      contract killSwitch(ack) = {
+        for (_ <- activeCh) {
+          ack!(Nil)
+        }
+      } |
+
+      /**
+       * Messages to be forwarded are sent here. If the forwarder
+       * if still active the message is forwarded, and an ack is
+       * sent. If the forwarder is inactive, no forwarding happens
+       * and no ack is sent.
+       */
+      contract forward(@message, ack) = {
+        // for (_ <! activeCh) {
+        for (_ <- activeCh) {
+          activeCh!(Nil) |
+          capability!(message)
+        }
+      }
+    }
+  }
+}
