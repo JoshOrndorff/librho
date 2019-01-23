@@ -15,9 +15,7 @@ new tokenFactory in {
       log!("Initial balance must be positive")
     }
     else {
-      log!("in else clause") |
       new mintId, coinFactory in {
-        log!("initial supply validated.") |
 
         // Return a single purse with total supply to creator
         coinFactory!(supply, *resolve) |
@@ -64,12 +62,15 @@ new tokenFactory in {
              * algorithm could be generalized straight-forwardly.
              */
             contract @({*mintId | *coinId}, "split") (@amt1, dest1, @amt2, dest2, error) = {
+              log!("in split") |
               for (_ <- unspentCh) {
+                log!("got unspent") |
                 if (amt1 + amt2 != value) {
                   unspentCh!(Nil) |
                   error!("Destination amounts do not sum to coin's total value")
                 }
                 else {
+                  log!("valid amounts to split") |
                   // This would change into a map or recursion to generalize splitting
                   coinFactory!(amt1, *dest1) |
                   coinFactory!(amt2, *dest2)
@@ -146,7 +147,7 @@ new tokenFactory in {
     stdout!("Program Running") |
 
     // New token with constant supply 300
-    tokenFactory!("300", *stdout, *alice1Ch) |
+    tokenFactory!(300, *stdout, *alice1Ch) |
 
     // Alice starts with all 300 tokens
     for (alice1 <- alice1Ch) {
@@ -155,6 +156,7 @@ new tokenFactory in {
       // Split purse into payment 100 for Bob, and change 200 for Alice
       @(*alice1, "split")!(200, *alice2Ch, 100, *bob1Ch, *stdout) |
       for (alice2 <- alice2Ch ; bob1 <- bob1Ch) {
+        stdout!("got results of split") |
 
         // Check coin values
         @(*alice2, "value")!(*aliceValCh) |
