@@ -1,0 +1,27 @@
+new a,
+    b,
+    g,
+    ACh,
+    BCh,
+    stdout(`rho:io:stdout`) in {
+
+  // Send public portions
+  ACh!(bundle+{*g | *a}) |
+  BCh!(bundle+{*g | *b}) |
+
+  // Uncomment to see the same construction does work
+  // when no bundles are included
+  //ACh!(*g | *a) |
+  //BCh!(*g | *b) |
+
+  for (A <-ACh ; B <- BCh) {
+
+    // Construct private channel first way
+    @{*A | *b}!(Nil) |
+
+    // Construct provate channel second way
+    for (_ <- @{*B | *a}) {
+      stdout!("Got it")
+    }
+  }
+}

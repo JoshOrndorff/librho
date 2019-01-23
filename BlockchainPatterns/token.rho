@@ -31,7 +31,9 @@ new tokenFactory in {
           new coinId, unspentCh in {
             // Initialize coin, and give it to its owner
             unspentCh!(Nil) |
-            return!(bundle+{*mintId | *coinId}) |
+            //ISSUE! This is subject to destructuring!
+            //return!(bundle!{*mintId | *coinId}) |
+            return!(*mintId | *coinId) |
 
             // Methods use compound names. If you prefer a first-arg dispatching
             // checkout https://github.com/JoshOrndorff/librho/pull/13
