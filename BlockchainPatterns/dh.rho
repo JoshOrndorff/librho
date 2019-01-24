@@ -6,8 +6,8 @@ new a,
     stdout(`rho:io:stdout`) in {
 
   // Send public portions
-  ACh!(bundle+{*g | *a}) |
-  BCh!(bundle+{*g | *b}) |
+  ACh!(bundle{*g | *a}) |
+  BCh!(bundle{*g | *b}) |
 
   // Uncomment to see the same construction does work
   // when no bundles are included
