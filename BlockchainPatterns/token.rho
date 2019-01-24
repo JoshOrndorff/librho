@@ -18,7 +18,7 @@ new tokenFactory in {
         // Return a single coin with total supply to creator
         coinFactory!(supply, *resolve) |
 
-        // This implementation does not leak the raw MintID.
+        // This implementation does not leak the raw MintId.
         // If you want centralized monetary policy, include
         // something like the following
         // resolve!(*mintId) // CAUTION: Allows unilateral inflation
@@ -35,7 +35,6 @@ new tokenFactory in {
 
             // Methods use compound names. If you prefer a first-arg dispatching
             // checkout https://github.com/JoshOrndorff/librho/pull/13
-            // But note that it cannot be used securely on all methods
 
             /**
              * Allows anyone who knows the compound name to check the
@@ -134,6 +133,8 @@ new tokenFactory in {
     In fact, split, gather, and cycle could likely be generalized into
     a single method called transact that takes inputs and outputs as
     arguments.
+
+    Finish the demo below once DH pattern works.
     */
   } |
 
