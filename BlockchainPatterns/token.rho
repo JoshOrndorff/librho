@@ -1,9 +1,7 @@
 // LICENSE: Anyone can freely read and learn from this code
 // but it may not be deployed in a public blockchain until I
-// am paid a reasonable amount for my time writing it. I spent
-// about 6 hours writing, debugging, and polishing this code.
-// my hourly rate is 0.5 eth / hour. Once I'm paid a cumulative
-// 3 eth, this code will be re-licensed under Apache 2.0
+// am paid a reasonable amount for my time writing it.
+// Then it will be Apache-2.0
 
 // Based rougly on http://erights.org/elib/capability/ode/ode-capabilities.html#simple-money
 // and https://github.com/rchain/rchain/blob/dev/casper/src/main/rholang/MakeMint.rho
@@ -17,7 +15,7 @@ new tokenFactory in {
     else {
       new mintId, coinFactory in {
 
-        // Return a single purse with total supply to creator
+        // Return a single coin with total supply to creator
         coinFactory!(supply, *resolve) |
 
         // This implementation does not leak the raw MintID.
