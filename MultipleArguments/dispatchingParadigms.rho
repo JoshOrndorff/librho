@@ -55,11 +55,7 @@ new instance,
   contract uncompound2 (@(inst, method), ack) = {
     ack!(Nil) |
 
-    //BUG I can't get this pattern match to work.
-    // replacing it with the commented version immediately
-    // below works as expected.
     contract @inst (@=method, @a, @b) = {
-    //contract @inst (@"method1", @a, @b) = {
       @(inst, method)!(a, b)
     }
   } |
@@ -77,6 +73,6 @@ new instance,
     // Now convert each method so it is dispatched in both ways
     // Expect the two remaining calls to properly execute
     compound2!(*instance, "method2", Nil) |
-    uncompound2!((*instance, "method2"), Nil)
+    uncompound2!((*instance, "method1"), Nil)
   }
 }
