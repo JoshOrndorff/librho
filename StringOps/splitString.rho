@@ -1,0 +1,17 @@
+new splitString, splitHelper, in {
+
+  // export+{splitStringE}
+
+  contract splitString(@{s /\ String}, @{delim /\ String}, return, error) = {
+    if (s.length() != 1) {
+      error!("Delimiter must be a string of length 1, not " ++ "divider")
+    }
+    else {
+      splitHelper!([], "", divider, *return)
+    }
+  } |
+
+  contract extractUntil(@string, @delim, return) = {
+
+  }
+}
