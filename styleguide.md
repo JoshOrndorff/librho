@@ -181,3 +181,32 @@ Motivation:
 * Either pattern can be converted to the other through multiplexing and demultiplexing. Muxing is cheap whereas demuxing costs a pattern match.
 * This pattern allows errors in sub calls to be reported directly to the upstream caller without having to return through the call stack.
 * This idea can be generalized to implement one-of types like `Maybe` which would take channels for `nothing`, `just`, and `error`.
+
+### Object Capability Creation
+When writing factory contracts that are tasked with building new object capabilities require the user to pass in all relevant channels.
+
+Correct:
+```scala
+new factory in {
+  contract factory(inputCh, ack) = {
+    ack!(Nil) |
+    contract inputCh (...) = {...}
+  }
+}
+```
+
+Incorrect:
+```scala
+new factory in {
+  contract factory(return) = {
+    new capability in {
+      return!(*capability) |
+      contract capability (...) = {...}
+    }
+  }
+}
+```
+
+Motivation:
+* Some callers will prefer to have entirely seperate new channels for multiple capabilities, while others will prefer having related capabilities on compound names of the same channel. Allowing the user to pass in channels facilitates either
+* Conversion of paradigms is possible in bot directions, but is easier to read and less computationally expensive when contracts are written in the bring-your-own-channel style. See /MethodCallingParadigms/creatingCapabilities.rho for tutorial.
