@@ -22,11 +22,18 @@ Search, Sort, Pathfinding, etc
 ## Blockchain Patterns
 Best practices for common blockchain operations. Again, any code here is in its infancy and is not formally verified. Use at your own risk.
 
-## Multiple Arguments
-Comparing and converiting three patterns for calling contracts with multiple arguments.
-1. Tupling
-2. Currying (not recommended here)
-3. Multiplexing
+## Method Calling Paradigms
+Several idioms are emerging for calling function- and method-like contracts. Files in this directory convert between paradigms when possible, and inform the styleguid as to which paradigm is preferred in cases where one paradigm cannot be converted to the other and is, thus, less general
+* Passing Multiple Arguments
+   1. Tupling
+   2. Currying (Not recommended -- highly sequential)
+   3. Multiplexing
+* Dispatching Methods
+   1. Compound names `@(instance, "method")!(args)`
+   2. First argument pattern matching `@instance!("method", args)`
+* Creating New Capabilities
+   1. Caller passes in name (More general)
+   2. Factory creates name
 
 ## License
 Apache 2.0
