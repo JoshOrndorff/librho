@@ -6,7 +6,7 @@ new crFactory in {
    * process.
    *
    * commitIn - Commit to a value by sending hash(key, value)
-   * revealIn - Reveal your value by sending your randomly
+   * revealIn - Reveal your value by sending (key, value)
    * commitAck - Acknowledgement of commitment is sent
    * validReveal - Revealed value is sent iff reveal is correct
    * bogusReveal - Acknowledgement of bogus reveal is sent
