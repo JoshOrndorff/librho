@@ -1,0 +1,32 @@
+/*
+The state-of-the-art in practical end to end encrypted
+communication is the signal protocol. It requires only
+a centralized but zero-knowledge third party.
+
+This smart contract eliminates the necessity of a benign
+third party by replacing it with an economically-incentivized
+set of blockchain validators.
+*/
+
+
+/**
+Alice and Bob are peers who want to communicaate with one
+another and acheive the following properties.
+Authentication - Alice knows she is talking to the real Bob
+Deniability - Neither can prove to a stranger that messages came from the other
+Forward Secrecy - If Alice leaks a key....
+Backward Secrecy??
+
+
+*/
+
+// Helpful guide https://github.com/signalapp/libsignal-protocol-javascript
+new signalFactory
+in {
+
+
+  // Tests / Demo
+  new stdout(`rho:io:stdout`) in {
+    Nil // TODO
+  }
+}
