@@ -1,0 +1,23 @@
+
+new quine,
+    selfCh,
+    stdout(`rho:io:stdout`) in {
+  selfCh!(
+      for (_ <- quine; self <- selfCh) {
+        stdout!("running quine") |
+        selfCh!(*self) |
+        *self
+      }
+    ) |
+
+  for (_ <- quine; self <- selfCh) {
+    stdout!("running quine") |
+    selfCh!(*self) |
+    *self
+  } |
+
+  // Test / Demo
+  quine!(Nil)|
+  quine!(Nil)|
+  quine!(Nil)
+}

@@ -1,0 +1,14 @@
+new quine,
+    selfCh in {
+  selfCh!(
+      for (_ <- quine; self <- selfCh) {
+        selfCh!(*self) |
+        *self
+      }
+    ) |
+
+  for (_ <- quine; self <- selfCh) {
+    selfCh!(*self) |
+    *self
+  }
+}
