@@ -1,0 +1,141 @@
+/*
+There are two popular ways of constructing new object capabilities
+
+1. (Recommended) Caller supplies their own channel on which a capability
+   can be constructed. Generally only an ack is sent from the factory
+   back to the caller in this paragidm.
+
+2. Caller requests a new paradigm and supplies a channel on which it
+   will be returned. The returning of the newly-constructed capability
+   is all the acknowledgement necessary.
+
+Option 1, the "BYOchan" method, is more easily and cleanly converted.
+Thus BYOchan is the preferres paradigm in the librho styleguide.
+*/
+
+new
+byoFactory,
+newFactory,
+byoify1,
+newify1 in {
+
+  /**
+   * Simple factory written in the BYOchan style.
+   * User supplies a channel called cap and gets an ack
+   * when the capability is ready
+   */
+  contract byoFactory(cap, ack) = {
+    ack!(Nil) |
+    // Have to use explicit tupling for forwarding
+    contract cap(@(arg /\ String, return)) = {
+      @return!("Called BYOchan version with: " ++ arg)
+    }
+  } |
+
+  /**
+   * Simple factory written in the NEWchan style.
+   * User requests a capability and receives in on the
+   * supplied return channel when it is ready
+   */
+  contract newFactory(return) = {
+    new cap in {
+      return!(*cap) |
+      contract cap(@(arg /\ String, return)) = {
+        @return!("Called NEWchan version with: " ++ arg)
+      }
+    }
+  } |
+
+  /**
+   * Takes a factory written in the NEWchan style and
+   * converts it to the BYOchan style.
+   */
+  contract byoify1 (newFact, return) = {
+    new byoFact in {
+      return!(*byoFact) |
+
+      // User calls this factory supplying a channel
+      contract byoFact(userSuppliedCap, ack) = {
+        new realCapCh in {
+
+          // We call the original factory getting back its channel
+          newFact!(*realCapCh) |
+          for (realCap <- realCapCh) {
+            ack!(Nil) |
+
+            // Create a forwarder from the user-supplied
+            // channel to the real one
+            contract userSuppliedCap(@msg) = {
+              realCap!(msg)
+            }
+          }
+        }
+      }
+    }
+  } |
+
+  /**
+   * Takes a factory written in the BYOchan style and
+   * wraps it. No new factory is created.
+   *
+   * The simplicity and lack of tuplespace culter from
+   * this conversion, is why the librho style-guide
+   * favors contracts written in BYOchan style.
+   */
+  contract newify1(byoFact, return) = {
+    // Create the NEWchan that the user wants
+    new cap, ack in {
+      // Give it to the original factory
+      byoFact!(*cap, *ack) |
+
+      // When we get the ack, give the cap back to the user
+      for (_ <- ack) {
+        return!(*cap)
+      }
+    }
+  } |
+
+  // Test / Demo
+  new stdout(`rho:io:stdout`) in {
+    stdout!("program running") |
+
+    // Test plain byo factory
+    new cap, ack in {
+      byoFactory!(*cap, *ack) |
+      for (_ <- ack) {
+        cap!(("Test1", *stdout))
+      }
+    } |
+
+    // Test plain new factory
+    new return in {
+      newFactory!(*return) |
+      for (cap <- return) {
+        cap!(("Test2", *stdout))
+      }
+    } |
+
+    // Test byoify1
+    new return in {
+      byoify1!(*newFactory, *return) |
+      for (byoFact <- return) {
+
+        // From here this test is identical to Test1
+        new cap, ack in {
+          byoFact!(*cap, *ack) |
+          for (_ <- ack) {
+            cap!(("Test3", *stdout))
+          }
+        }
+      }
+    } |
+
+    // Test newify1
+    new return in {
+      newify1!(*byoFactory, *return) |
+      for (cap <- return) {
+        cap!(("Test4", *stdout))
+      }
+    }
+  }
+}
