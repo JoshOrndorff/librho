@@ -1,7 +1,8 @@
 new speciesFactory in {
 
   contract speciesFactory(adamCh, eveCh) = {
-    new speciesId,
+    new godId,
+        speciesId,
         eveId,
         adamId,
         Xchrom,
@@ -11,16 +12,16 @@ new speciesFactory in {
       adamCh!({*speciesId | *adamId}) | //Should be a bundle, but bug in interpreter
       eveCh! ({*speciesId | *eveId }) | //Should be a bundle...
 
-      // Form Adam and Eve (optional: in own image)
-      @{*speciesId | "personFactory"}!("Adam", *adamId, *Xchrom, *Ychrom) |
-      @{*speciesId | "personFactory"}!("Eve",  *eveId,  *Xchrom, *Xchrom) |
+      // God form Adam and Eve (optional: in own image)
+      @{*godId | *speciesId | "personFactory"}!("Adam", *adamId, *Xchrom, *Ychrom) |
+      @{*godId | *speciesId | "personFactory"}!("Eve",  *eveId,  *Xchrom, *Xchrom) |
 
       /**
-       * Creates a new person of the species. Because it requires
-       * access to speciesId, this method can be called only from
+       * God creates a new person of the species. Because it requires
+       * access to godId, this method can be called only from
        * within this file.
        */
-      contract @{*speciesId | "personFactory"} (name, id, gene1, gene2) = {
+      contract @{*godId | *speciesId | "personFactory"} (name, id, gene1, gene2) = {
         new genesCh in {
           // GenesCh is for nondeterministic inheritance
           genesCh!(*gene1) |
@@ -65,7 +66,7 @@ new speciesFactory in {
 
                       for (egg <- genesCh) { // Should be peek
                         genesCh!(*egg) |
-                        @{*speciesId | "personFactory"}!(*name, *childId, *egg, *sperm)
+                        @{*godId | *speciesId | "personFactory"}!(*name, *childId, *egg, *sperm)
                       }
                     }
                   }
