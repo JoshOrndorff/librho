@@ -1,0 +1,32 @@
+new stdout(`rho:io:stdout`) in {
+
+  // Sending over a par-structured name works as expected
+  new a, b in {
+    @{*a | *b}!(Nil) |
+    for (_ <- @{*a | *b}) {stdout!("n")}
+  } |
+
+  // Order of parring doesn't matter as expected
+  new a, b in {
+    @{*a | *b}!(Nil) |
+    for (_ <- @{*b | *a}) {stdout!("o")}
+  } |
+
+  // Receiving on a bundled name works as expected
+  new chan in {
+    @{*chan}!(Nil) | // Also works as just `chan!(Nil) |`
+    for (_ <- @{bundle{*chan}}) {stdout!("s")}
+  } |
+
+  // But when par-structured and bundled meet... NOT as expected
+  new a, b in {
+    @{*a | *b}!(Nil) |
+    for (_ <- @{bundle{*a} | *b}) {stdout!("t")}
+  }
+
+  //
+  // This bundle behavior precludes the Diffie-Hellman-like
+  // pattern that Mike Stay described
+  // https://groups.google.com/forum/#!msg/cap-talk/4hPYemjPK_Y/HOnN9cxnBwAJ
+  //
+}
