@@ -1,0 +1,50 @@
+// This code is based on https://en.wikipedia.org/wiki/Matching_pennies
+
+new MatchingPenniesFactory in {
+
+  contract MatchingPenniesFactory(@prize, payoutCh, return) = {
+    // By joining on the name, whichever player goes first
+    // can change their move until the other player goes.
+    // TODO, Should compose with commit-reveal code.
+    new p1Ch, p2Ch in {
+      return!((*p1Ch, *p2Ch)) |
+      for (@p1 <- p1Ch ; @p2 <- p2Ch) {
+        //TODO validate input
+        if (p1 == p2) {
+          payoutCh!(prize)
+        }
+      }
+    }
+  } |
+
+  // Tests
+  new stdout(`rho:io:stdout`) in {
+
+    // They win with heads
+    new gameCh in {
+      MatchingPenniesFactory!("You win test 1!", *stdout, *gameCh) |
+      for (@(p1Ch, p2Ch) <- gameCh) {
+        @p1Ch!("heads") |
+        @p2Ch!("heads")
+      }
+    } |
+
+    // They win with tails
+    new gameCh in {
+      MatchingPenniesFactory!("You win test 2!", *stdout, *gameCh) |
+      for (@(p1Ch, p2Ch) <- gameCh) {
+        @p1Ch!("tails") |
+        @p2Ch!("tails")
+      }
+    } |
+
+    // They lose
+    new gameCh in {
+      MatchingPenniesFactory!("You win test 3!", *stdout, *gameCh) |
+      for (@(p1Ch, p2Ch) <- gameCh) {
+        @p1Ch!("heads") |
+        @p2Ch!("tails")
+      }
+    }
+  }
+}
