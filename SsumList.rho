@@ -1,0 +1,92 @@
+new SsumLis in {
+
+	@dev the contract SsumList takes as argument a list of integers and returns the sum
+	@param maybeList the list of integers. 
+	@error the channel on which an error message will be send if execution can't finish (in case no list is given or list contains non-integer values)
+	@return the channel on which the sum of the integers from the list will be send
+	contract SsumList(@maybeList, error, return) = {
+
+		new matchesList, iterator, matchesInt in {
+			// We check if the input is a list and continue execution if this is the case
+			match maybeList {
+			[hd, ...tl] => {matchesList!(maybeList)}
+			_			=> {error!({"Error": "Sent process does not match [hd, ...tl]", "Item": maybeList})}
+			} |
+
+			// Type checking on an item being an integer
+			contract matchesInt(@maybeInt, error, return) = {
+				match maybeInt {
+				Int 	=> {return!(true)}
+				_		=> {error!({"Error": "Item is not an integer", "Item": maybeInt})}
+				}
+			} |
+
+			for(@list <- matchesList) {
+				new totalSumMemory, sumProcess, doneIterating in {
+					// We start counting on zero
+					totalSumMemory!(0) |
+
+					// Calling the iterator contract
+					iterator!(list, *sumProcess, *doneIterating) |
+					contract sumProcess(@item, ack) = {
+						new itemError, itemReturn in {
+							// Item should be an integer
+							matchesInt!(item, *itemError, *itemReturn) |
+							for(_ <- itemReturn) {
+								for(@totalSum <- totalSumMemory) {
+									// Add item to totalSumMemory and give a signal to the Iterator contract to continue
+									totalSumMemory!(totalSum + item) |
+									ack!(Nil)
+								}
+							} |
+							for(@errorMessage <- itemError) {
+								error!({"Error": "List contained non-integer", "Item": errorMessage.get("Item")}) 
+							}
+						}
+					} |
+					for(_ <- doneIterating) {
+						for(@totalSum <- totalSumMemory) {
+							return!(totalSum) 
+						}
+					}
+				}
+			} |
+
+			// The iterator contract iterates over a list returns the head of the list on every step to be used in a given process
+			contract iterator(@list, process, done) = {
+    	  		match list {
+    	    		[hd, ...tl] => {
+    	      			new ack in {
+    	        			process!(hd, *ack) |
+    	        			for (_ <- ack) { 
+    	        				iterator!(tl, *process, *done) 
+    	        			}
+    	      			}
+    	    		}
+    	   			_ 			=> 	done!(Nil)
+    	 		}
+    	 	} 
+		} 
+	} |
+	
+	// Integration tests
+	new retCh, errCh, stdout(`rho:io:stdout`), stderr(`rho:io:stderr`) in {
+		SsumList!([1,2,3], *errCh, *retCh) |
+		for(@return <- retCh) {
+			stdout!([return, "Expected: 6"]) |
+			SsumList!([1], *errCh, *retCh) |
+			for(@return <- retCh) {
+				stdout!([return, "Expected: 1"]) |
+				SsumList!("Hello", *errCh, *retCh) |
+				for(@error <- errCh) {
+					stdout!([error, "Expected: {Error: Sent process does not match [hd, ...tl], Item: Hello}"]) |
+					SsumList!([1, 2], *errCh, *retCh) |
+					for(@return <- retCh) {
+						stdout!([error, "Expected: {Error: List contained non-integer, Item: Hello}"])
+					}
+				}
+			}
+
+		}
+	}
+}
