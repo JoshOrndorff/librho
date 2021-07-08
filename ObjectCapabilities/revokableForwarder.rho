@@ -20,6 +20,14 @@ new revokFactory in {
       /**
        * Anyone with the kill switch can revoke the forwarding
        * priviledges by sending any message on the killSwitch.
+       *
+       * Design Decision:
+       * The ack here could be treated in a few different ways
+       * 1. Only send ack on the call that actually revokes the
+       *    forwarding. (Demonstrated here)
+       * 2. Send ack every time regardless of whether the forwarder
+       *    was already revoked.
+       * 3. Send return value indicating previous state of forwarder.
        */
       contract killSwitch(ack) = {
         for (_ <- activeCh) {
@@ -31,13 +39,66 @@ new revokFactory in {
        * Messages to be forwarded are sent here. If the forwarder
        * if still active the message is forwarded, and an ack is
        * sent. If the forwarder is inactive, no forwarding happens
-       * and no ack is sent.
+       * and no ack is sent. The ack is just the forwarder saying,
+       * Your message got here and I passed it on. It is _not_ a
+       * guarantee that your message reaches an ultimate downstream
+       * capability in the case that several forwarders are composed.
        */
       contract forward(@message, ack) = {
         // for (_ <! activeCh) {
         for (_ <- activeCh) {
           activeCh!(Nil) |
+          ack!(Nil) |
           capability!(message)
+        }
+      } |
+
+      /**
+       * Overloaded forward method nearly identical to the
+       * previous, but no ack is sent.
+       */
+       contract forward(@message) = {
+         // for (_ <! activeCh) {
+         for (_ <- activeCh) {
+           activeCh!(Nil) |
+           capability!(message)
+         }
+       }
+    }
+  } |
+
+  // Demo of using the forwarder.
+  new superpower,
+    killSwitchCh,
+    forwardCh,
+    ack,
+    stdout(`rho:io:stdout`)
+    in {
+
+    // Silly superpower that we'll wrap with a forwarder
+    // Explicit tupling is not ideal. But I don't see a better option.
+    contract superpower(@(payload /\ String, return)) = {
+      @return!("Superpower Invoked with " ++ payload)
+    } |
+
+    // Create a forwarder for the superpower
+    // revokFactory!(*superpower, await *killSwitchCh, await *forwardCh) {
+    revokFactory!(*superpower, *killSwitchCh, *forwardCh) |
+    for (killSwitch <- killSwitchCh; forward <- forwardCh) {
+
+      // Call the forwarder
+      // Notice the explicit tupling of the entire message
+      // including return channel that goes on to the superpower
+      forward!(("Apples", *stdout), *ack) |
+      for (_ <- ack) {
+
+        // Revoke the forwarder
+        killSwitch!(Nil, *ack) |
+        for (_ <- ack) {
+
+          // Call the forwarder again and notice that the
+          // message does not reach the superpower
+          forward!(("Bananas", *stdout), *ack)
         }
       }
     }
