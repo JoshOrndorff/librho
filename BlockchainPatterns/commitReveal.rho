@@ -1,0 +1,109 @@
+new crFactory in {
+  /**
+   * The crFActory takes in five channels and constructs a commit-reveal
+   * scheme on them. To begin a user chooses a secret value that will
+   * later be revealed publicly, and a random key k which is any rholang
+   * process.
+   *
+   * commitIn - Commit to a value by sending hash(key, value)
+   * revealIn - Reveal your value by sending (key, value)
+   * commitAck - Acknowledgement of commitment is sent
+   * validReveal - Revealed value is sent iff reveal is correct
+   * bogusReveal - Acknowledgement of bogus reveal is sent
+   *
+   * This is a one-time-use scheme. There are no mulligans on reveals.
+   */
+  contract crFactory(commitIn, revealIn, commitAck, validReveal, bogusReveal, trace) = {
+    trace!("In crFactory") |
+
+    // Wait for the user to send a commitment
+    for (@commit <- commitIn) {
+      trace!("Got Commitment") |
+      commitAck!(Nil) |
+
+      // Wait for the user to send a reveal
+      for (@(key, val) <- revealIn) {
+        trace!("Got Reveal") |
+
+        // Check that the revealed value matches the commitment
+        new hashCh in {
+          @"keccak256Hash"!((key, val).toByteArray(), *hashCh) |
+          for (@hash <- hashCh) {
+            trace!("got hash") |
+            if (hash == commit) {
+              validReveal!(val)
+            }
+            else {
+              bogusReveal!(Nil)
+            }
+          }
+        }
+      }
+    }
+  } |
+
+  // Tests / Demos
+  new
+  keyCh,
+  valueCh,
+  commitCh,
+  stdout(`rho:io:stdout`)
+  in {
+
+    // In all three scenarios, I make the same commitment
+    // key: "key"
+    // value: "1337"
+    // keccak256(("key", 1337)):
+    keyCh!("key") |
+    valueCh!(1337) |
+    @"keccak256Hash"!(("key", 1337).toByteArray(), *commitCh) |
+    for (@key <- keyCh ; @value <- valueCh ; @commit <- commitCh) {
+      stdout!("Beginning Demo") |
+
+      new
+      commitIn,
+      revealIn,
+      commitAck,
+      validReveal,
+      bogusReveal
+      in {
+        crFactory!(*commitIn, *revealIn, *commitAck, *validReveal, *bogusReveal, *stdout) |
+        commitIn!(commit) |
+        revealIn!((key, value)) |
+        for (_ <- commitAck ; @revealed <- validReveal) {
+          stdout!(["**Correctly reveald value: ", revealed])
+        }
+      } |
+
+      new
+      commitIn,
+      revealIn,
+      commitAck,
+      validReveal,
+      bogusReveal
+      in {
+        crFactory!(*commitIn, *revealIn, *commitAck, *validReveal, *bogusReveal, *stdout) |
+        commitIn!(commit) |
+        revealIn!(("bogus key", value)) |
+        for (_ <- commitAck ; _ <- bogusReveal) {
+          stdout!("**Correctly detected bogus key")
+        }
+      } |
+
+      new
+      commitIn,
+      revealIn,
+      commitAck,
+      validReveal,
+      bogusReveal
+      in {
+        crFactory!(*commitIn, *revealIn, *commitAck, *validReveal, *bogusReveal, *stdout) |
+        commitIn!(commit) |
+        revealIn!((key, "bogus value")) |
+        for (_ <- commitAck ; _ <- bogusReveal) {
+          stdout!("**Correctly detected bogus value")
+        }
+      }
+    }
+  }
+}
