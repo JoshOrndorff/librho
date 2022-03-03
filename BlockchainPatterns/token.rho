@@ -1,0 +1,173 @@
+// LICENSE: Anyone can freely read and learn from this code
+// but it may not be deployed in a public blockchain until I
+// am paid a reasonable amount for my time writing it.
+// Then it will be Apache-2.0
+
+// Based rougly on http://erights.org/elib/capability/ode/ode-capabilities.html#simple-money
+// and https://github.com/rchain/rchain/blob/dev/casper/src/main/rholang/MakeMint.rho
+
+new tokenFactory in {
+  contract tokenFactory (@supply, log, resolve) = {
+    log!("Inside token factory. Haven't yet validated supply") |
+    if (supply < 0) {
+      log!("Initial balance must be positive")
+    }
+    else {
+      new mintId, coinFactory in {
+
+        // Return a single coin with total supply to creator
+        coinFactory!(supply, *resolve) |
+
+        // This implementation does not leak the raw MintId.
+        // If you want centralized monetary policy, include
+        // something like the following
+        // resolve!(*mintId) // CAUTION: Allows unilateral inflation
+
+        contract coinFactory (@value, return) = {
+          log!("coinFactory called") |
+
+          new coinId, unspentCh in {
+            // Initialize coin, and give it to its owner
+            unspentCh!(Nil) |
+            //ISSUE! This is subject to destructuring!
+            //return!(bundle!{*mintId | *coinId}) |
+            return!(*mintId | *coinId) |
+
+            // Methods use compound names. If you prefer a first-arg dispatching
+            // checkout https://github.com/JoshOrndorff/librho/pull/13
+
+            /**
+             * Allows anyone who knows the compound name to check the
+             * value of a coin on-chain. The compound name allows a
+             * coin-holder to give away a bundle allowing others to
+             * query the coin's value and confirm it isn't spent without
+             * also giving the right to spend the coin.
+             */
+            contract @({*mintId | *coinId}, "value") (return) = {
+              //for (_ <! unspentCh) {
+              for (_ <- unspentCh) {
+                unspentCh!(Nil) |
+                return!(value)
+              }
+            } |
+
+            /**
+             * Unlike purses, coins must be spent in their entirety.
+             *
+             * When a coin-holder wishes to spend less than the total
+             * value of the coin, she may split it into multiple coins
+             * and send one back to herself as change. This method
+             * allows splitting into exactly two new coins, although the
+             * algorithm could be generalized straight-forwardly.
+             */
+            contract @({*mintId | *coinId}, "split") (@amt1, dest1, @amt2, dest2, error) = {
+              log!("in split") |
+              for (_ <- unspentCh) {
+                log!("got unspent") |
+                if (amt1 + amt2 != value) {
+                  unspentCh!(Nil) |
+                  error!("Destination amounts do not sum to coin's total value")
+                }
+                else {
+                  log!("valid amounts to split") |
+                  // This would change into a map or recursion to generalize splitting
+                  coinFactory!(amt1, *dest1) |
+                  coinFactory!(amt2, *dest2)
+                }
+              }
+            } |
+
+            /**
+             * Generates a new coin with the exact same balance as the existing coin.
+             * Cycling a coin that was received as payment is security-critical to
+             * ensure that the spender does not retain a reference to the original
+             * coin.
+             */
+            contract @({*mintId | *coinId}, "cycle") (return) = {
+              for (_ <- unspentCh) {
+                coinFactory!(value, *return)
+              }
+            } |
+
+            /**
+             * Gathers (by spending) two coins into a single coin.
+             * This is useful for gathering up small "dust" coins created
+             * from generations of splitting.
+             *
+             * This method also performs the necessary cycling (see "cycle" method
+             * above), so it is not necessary to cycle a bewly-received coin if
+             * you also plan to gather it with another.
+             */
+            contract @({*mintId | *coinId}, "gather") (otherCoin, return) = {
+              new otherValCh in {
+                @(*otherCoin, "startBurn")!(bundle{*mintId | *coinId}) |
+                @{*otherCoin | *coinId}!(*otherValCh) | // Confirm burn // await would be nice
+
+                for (@otherVal <- otherValCh; _ <- unspentCh) {
+                  coinFactory!(value + otherVal, *return)
+                }
+              }
+            } |
+
+            /**
+             * Allows another coin from the same mint to burn this coin.
+             * Facilitates joining coins together.
+             *
+             * Anyone who knows the coin's name can call this method. But the
+             * coin is not actually destroyed until a second call comes that
+             * could only be made by another coin from the same mint.
+             */
+            contract @({*mintId | *coinId}, "startBurn") (gatheringCoin) = {
+              for (finalValCh <- @{*gatheringCoin | *coinId}; _ <- unspentCh) {
+                finalValCh!(value)
+              }
+            }
+          }
+        }
+      }
+    }
+    /*
+    Future work. The split and gather methods should be generalized to
+    support arbitrarily many inputs and outputs.
+
+    In fact, split, gather, and cycle could likely be generalized into
+    a single method called transact that takes inputs and outputs as
+    arguments.
+
+    Finish the demo below once DH pattern works.
+    */
+  } |
+
+  // Tests / Demo
+  new alice1Ch,
+      alice2Ch,
+      bob1Ch,
+      aliceValCh,
+      bobValCh,
+      stdout(`rho:io:stdout`) in {
+    stdout!("Program Running") |
+
+    // New token with constant supply 300
+    tokenFactory!(300, *stdout, *alice1Ch) |
+
+    // Alice starts with all 300 tokens
+    for (alice1 <- alice1Ch) {
+      stdout!("got alice's initial purse back") |
+
+      // Split purse into payment 100 for Bob, and change 200 for Alice
+      @(*alice1, "split")!(200, *alice2Ch, 100, *bob1Ch, *stdout) |
+      for (alice2 <- alice2Ch ; bob1 <- bob1Ch) {
+        stdout!("got results of split") |
+
+        // Check coin values
+        @(*alice2, "value")!(*aliceValCh) |
+        @(*bob1  , "value")!(*bobValCh)   |
+
+        for (@aliceVal <- aliceValCh ; @bobVal <- bobValCh) {
+          stdout!(["Alice has: ", aliceVal]) |
+          stdout!(["Bob has  : ", bobVal])
+        }
+      }
+    }
+  }
+}
